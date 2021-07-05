@@ -89,7 +89,7 @@ def main(argv):
     except getopt.GetoptError:
         print('aedat4to2.py -i <inputfile.aedat4> -o <outputfile.aedat>')
         sys.exit(2)
-    if len(args)==0:
+    if len(opts)==0:
         print('aedat4to2.py -i <inputfile> -o <outputfile>'
               '\n - converts from AEDAT-4.0 to AEDAT-2.0 format')
         sys.exit()
