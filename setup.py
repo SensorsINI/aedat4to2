@@ -8,5 +8,5 @@ setup(name='aedat4to2',
       author='Tobi Delbruck',
       author_email='tobi@ini.uzh.ch',
       url='https://github.com/SensorsINI/aedat4to2',
-      packages=['distutils', 'distutils.command'],
+      packages=['aedat4to2'],
       )
