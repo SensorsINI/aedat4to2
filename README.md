@@ -1,29 +1,31 @@
-# aedat4tomat
-Convert AEDAT4 files from DV into .mat files for matlab. Python is required (recommend Anaconda).
+# aedat4to2
+Convert AEDAT4 files from Inivation's DV https://gitlab.com/inivation/dv/dv-python into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
 
-If you find this code useful in your research, please consider citing:
+Based on AEDAT file format specifications in https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html
 
-    @article{baldwin2020event,
-      title={Event Probability Mask (EPM) and Event Denoising Convolutional NeuralNetwork (EDnCNN) for Neuromorphic Cameras},
-      author={Baldwin, R and Almatrafi, Mohammed and Asari, Vijayan and Hirakawa, Keigo},
-      journal={arXiv preprint arXiv:2003.08282},
-      year={2020}
-    }
+Python is required (recommend Anaconda).
 
-First install the dv module...
+Started from useful script https://github.com/bald6354/aedat4tomat
+
+Recommended: Make a conda environment....
+````shell
+conda create --name aedat4to2 python=3.8
+````
+Install the dv module...
 ```
 pip install dv
 ```
 
+Install the requirements....
+````shell
+pip install -r requirements.txt
+````
+
 Example Conversion:
 ```console
-foo@bar:~$ python /home/username/aedat4tomat.py -i "dvFile.aedat4" -o "dvFile.mat"
+foo@bar:~$ python /home/username/aedat4to2.py -i "dvFile.aedat4" -o "dvFile.aedat"
 ```
 
-You can also make a simple bash script that will process all aedat4 files in a directory into several .mat files. Then just call it from MATLAB using the unix command.
+You can also make a simple bash script that will process all aedat4 files in a directory into .aedat version 2 files. 
 
-```
-unix(['./processFolderWithInput ' pathToAedatFiles])
-```
-
-(This code is designed to work with aedat4 that contains frames, events, and imu streams. If your data does not have all these fields, just comment out the sections of aedat4tomat.py that deal with the data you are missing.)
+This code only writes DVS brightness change events from with aedat4 files for now. Pls request IMU samples and frames.
