@@ -9,7 +9,7 @@ Started from useful script https://github.com/bald6354/aedat4tomat
 
 # Limitations
 aedat4to2 currently only writes DVS brightness change events from aedat4 files. Please request IMU samples and frames by writing
-Tobi Delbruck (tobi@ini.uzh.ch).
+Tobi Delbruck (tobi@ini.uzh.ch). Or even better, fork and suggest pull to us. Thanks!
 
 
 ## Installation
