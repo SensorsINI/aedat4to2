@@ -63,6 +63,17 @@ aedat4to2 sample1.aedat4 sample2.aedat4
 2021-07-06 09:18:06,812 - aedat4to2.aedat4to2 - INFO - wrote   1.45e+07 events to sample1.aedat2 (aedat4to2.py:279)
 2021-07-06 09:18:06,819 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
 2021-07-06 09:18:07,210 - aedat4to2.aedat4to2 - INFO - wrote   1.45e+07 events to sample2.aedat2 (aedat4to2.py:279)
+````
 
+For windows users suffering from cmd.exe limitations, you can start Anaconda Powershell prompt, activate the conda enviroment, and use 
+this magic powershell command to process a list of files
+
+````console
+(aedat4to2) PS G:\Downloads\1_aedat> aedat4to2.exe $(ls *.aedat4| % {$_.FullName})
+2021-07-06 09:30:29,177 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
+2021-07-06 09:30:34,423 - aedat4to2.aedat4to2 - INFO - wrote   3.39e+08 events to alley-2019_11_04_09_36_15.aedat2 (aedat4to2.py:279)
+2021-07-06 09:30:34,537 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
+2021-07-06 09:30:39,516 - aedat4to2.aedat4to2 - INFO - wrote   3.26e+08 events to alley-2019_11_04_09_38_03.aedat2 (aedat4to2.py:279)
+....
 ````
 
