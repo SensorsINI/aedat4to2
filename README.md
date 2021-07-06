@@ -32,6 +32,9 @@ Install the requirements....
 pip install -r requirements.txt
 ````
 
+### Windows DV users
+If you have not installed DV, you might need to go through one-time installation of MS visual studio build tools to install DV.
+
 ## Usage
 ````console
 aedat4to2 -h
