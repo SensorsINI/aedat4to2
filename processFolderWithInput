@@ -1,7 +1,0 @@
-#!/bin/bash
-
-#user this to activate a conda enviroment (if needed)
-#eval "$(conda shell.bash hook)"
-#conda activate dv
-
-find "$1" -type f -name "*.aedat4" -exec sh -c 'python /home/user/aedat4to2.py -i "$1" -o "${1%.aedat}"' _ {} \;

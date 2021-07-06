@@ -7,10 +7,21 @@ Python is required (recommend Anaconda).
 
 Started from useful script https://github.com/bald6354/aedat4tomat
 
+## Installation
 Recommended: Make a conda environment....
 ````shell
 conda create --name aedat4to2 python=3.8
+conda activate aedat4to2
 ````
+
+
+Install on system path to run as aedat4to2. Note the -e that allows your edits to aedat4to2.py to instantly have effect
+````shell
+pip install -e .
+````
+
+## If you just want to develop and not install.
+
 Install the dv module...
 ```
 pip install dv
@@ -21,11 +32,17 @@ Install the requirements....
 pip install -r requirements.txt
 ````
 
-Example Conversion:
+
+# Example Conversion:
+Convert a single file
 ```console
 foo@bar:~$ python /home/username/aedat4to2.py -i "dvFile.aedat4" -o "dvFile.aedat"
 ```
 
-You can also make a simple bash script that will process all aedat4 files in a directory into .aedat version 2 files. 
+Convert a bunch of files from .aedat4 to .aedat2 (assuming you have installed aedat4to2)
+````console
+aedat4to2 *.aedat4
+````
 
+# Limitations
 This code only writes DVS brightness change events from with aedat4 files for now. Pls request IMU samples and frames.
