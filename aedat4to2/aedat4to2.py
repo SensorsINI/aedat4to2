@@ -84,12 +84,14 @@ class Struct:
     pass
 
 
-def main(argv):
+def main(argv=None):
     """
     Process command line arguments
     :param argv: list of files to convert, or
     :return:
     """
+    if argv is None:
+        argv = sys.argv
     inputfile = None
     outputfile = None
     filelist = None
@@ -278,4 +280,4 @@ def export_aedat_2(data, filepath, height=260):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
