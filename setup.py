@@ -10,7 +10,7 @@ setup(name='aedat4to2',
       url='https://github.com/SensorsINI/aedat4to2',
       packages=find_packages(include=['aedat4to2', 'aedat4to2.*']),
       install_requires=[
-            'numpy','argparse', 'tqdm', 'dv'
+            'numpy','argparse', 'tqdm', 'easygui', 'dv'
       ],
       entry_points = {
             'console_scripts': ['aedat4to2=aedat4to2.aedat4to2:main']

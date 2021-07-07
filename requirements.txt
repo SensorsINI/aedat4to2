@@ -2,3 +2,4 @@ numpy
 argparse
 dv
 tqdm
+easygui
