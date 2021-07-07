@@ -345,6 +345,12 @@ def export_aedat_2(args, out, filepath, height=260):
             temperatureOffsetDegC = 35
 
             def encode_imu(data, code):
+                """
+                Encodes array of IMU data to jAER int32 addresses
+                :param data: array of float IMU data
+                :param code: the IMU data type code for this array
+                :return: the sample AER addressess
+                """
                 data = np.array(data)  # for speed and operations
                 if code == 0:  # accelX
                     quantized_data = (-data * accelSensitivityScaleFactorGPerLsb).astype(int16)
@@ -406,12 +412,6 @@ def export_aedat_2(args, out, filepath, height=260):
                         if i%100==0:
                             pbar.update(100)
 
-
-            # all_timestamps = np.concatenate([dvs_timestamps, imu_timestamps])
-            # all_addr = np.concatenate([dvs_addr, imu_addr])
-            # sort_idx = np.argsort(all_timestamps)
-            # all_addr = all_addr[sort_idx]
-            # all_timestamps = all_timestamps[sort_idx]
 
             # DV uses int64 timestamps in us, but jaer uses int32, let's subtract the smallest timestamp from everyone
             # that will start the converted recording at time 0
