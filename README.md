@@ -7,9 +7,11 @@ Python is required (recommend Anaconda).
 
 Started from useful script https://github.com/bald6354/aedat4tomat
 
+### Sample of jAER output from converted file from Baldwin dataset
+![bike_sample](https://github.com/SensorsINI/aedat4to2/sample-jaer-output.png "Sample AEDAT-2.0 output")
+
 # Limitations
-aedat4to2 currently only writes DVS brightness change events from aedat4 files. Please request IMU samples and frames by writing
-Tobi Delbruck (tobi@ini.uzh.ch). Or even better, fork and suggest pull to us. Thanks!
+aedat4to2 now supports DVS events, IMU samples, and APS frames. Please report bugs using issue tracker.
 
 
 ## Installation
@@ -84,5 +86,5 @@ this magic powershell command to process a list of files
 2021-07-06 09:30:34,537 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
 2021-07-06 09:30:39,516 - aedat4to2.aedat4to2 - INFO - wrote   3.26e+08 events to alley-2019_11_04_09_38_03.aedat2 (aedat4to2.py:279)
 ....
-````
+
 
