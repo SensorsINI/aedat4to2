@@ -20,7 +20,7 @@ conda activate aedat4to2
 ````
 
 
-Install on system path to run as aedat4to2. Note the -e that allows your edits to aedat4to2.py to instantly have effect.
+Install on system path to run as aedat4to2. Note the -e that allows your edits to aedata4to2/aedat4to2.py to instantly have effect.
 ````shell
 pip install -e .
 ````
@@ -33,40 +33,46 @@ pip install -r requirements.txt
 ````
 
 ### Windows DV users
-If you have not installed DV, you might need to go through one-time installation of MS visual studio build tools to install DV.
+If you have not installed DV, you might need to go through one-time installation of
+MS visual studio build tools to install DV which depends on a package that does not supply pre-built binaries.
 
 ## Usage
 ````console
 aedat4to2 -h
-usage: aedat4to2 [-h] [-o O] [-i I] [-v]
+usage: aedat4to2 [-h] [-o O] [-i I] [-q] [-v] [--overwrite] [--no_imu] [--no_frame]
 
 Convert files from AEDAT-4 to AEDAT-2 format. Either provide a single -i input_file -o output_file, or a list of .aedat4 input files.
 
 optional arguments:
-  -h, --help  show this help message and exit
-  -o O        output .aedat2 file name
-  -i I        input .aedat4 file name
-  -v          Turn on verbose output
-
+  -h, --help   show this help message and exit
+  -o O         output .aedat2 file name
+  -i I         input .aedat4 file name
+  -q           Turn off all output other than warnings and errors
+  -v           Turn on verbose output
+  --overwrite  Overwrite existing output files
+  --no_imu     Do not process IMU samples (which are very slow to extract)
+  --no_frame   Do not process APS sample frames (which are very slow to extract)
 ````
 
 # Example Conversion:
 Convert a single file, assuming you run within the module folder aedat4to2
 ```console
-python.exe "aedat4to2/aedat4to2.py" -i sample1.aedat4 -o sample1.aedat2
-2021-07-06 09:03:45,939 - __main__ - INFO - sensor size width=346 height=260 (aedat4to2.py:138)
-2021-07-06 09:03:46,349 - __main__ - INFO - wrote   1.45e+07 events to sample1.aedat2 (aedat4to2.py:277)
+aedat4to2 --overwrite aedat4to2\sample1.aedat4
+2021-07-08 16:09:30,273 - aedat4to2.aedat4to2 - INFO - overwriting F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\sample1.aedat2 (aedat4to2.py:163)
+2021-07-08 16:09:30,274 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:173)
+2021-07-08 16:09:30,564 - aedat4to2.aedat4to2 - INFO - 3635159 DVS events (aedat4to2.py:220)
+frames: 992 fr [00:00, 4488.69 fr/s]
+2021-07-08 16:09:30,814 - aedat4to2.aedat4to2 - INFO - 992 frames with size (346, 260) (aedat4to2.py:247)
+IMU: 0 sample [00:00, ? sample/s]2021-07-08 16:09:30,815 - aedat4to2.aedat4to2 - WARNING - IMU sample found: IMU samples will be converted to jAER AEDAT-2.0 assuming full scale 2000 DPS rotation an
+d 8g acceleration (aedat4to2.py:256)
+IMU: 20167 sample [00:01, 12683.08 sample/s]
+2021-07-08 16:09:32,407 - aedat4to2.aedat4to2 - INFO - 20167 IMU samples (aedat4to2.py:271)
+sorting: 3656318 ev|imu|fr [00:07, 509197.46 ev|imu|fr/s]
+2021-07-08 16:09:42,397 - aedat4to2.aedat4to2 - INFO - F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\sample1.aedat2 is 1,423,882 kB size, with duration 20.17s, containing 3,635,159 DVS eve
+nts at rate 180.2kHz, 141,169 IMU samples, and 992 frames at 49.18Hz (aedat4to2.py:504)
 ```
 
-Convert a bunch of files from .aedat4 to .aedat2 (assuming you have installed aedat4to2)
-
-````console
-aedat4to2 sample1.aedat4 sample2.aedat4
-2021-07-06 09:18:06,420 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
-2021-07-06 09:18:06,812 - aedat4to2.aedat4to2 - INFO - wrote   1.45e+07 events to sample1.aedat2 (aedat4to2.py:279)
-2021-07-06 09:18:06,819 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:140)
-2021-07-06 09:18:07,210 - aedat4to2.aedat4to2 - INFO - wrote   1.45e+07 events to sample2.aedat2 (aedat4to2.py:279)
-````
+You can convert a bunch of files by just suppplying them on the command line.
 
 For windows users suffering from cmd.exe limitations, you can start Anaconda Powershell prompt, activate the conda enviroment, and use 
 this magic powershell command to process a list of files
