@@ -8,7 +8,7 @@ Python is required (recommend Anaconda).
 Started from useful script https://github.com/bald6354/aedat4tomat
 
 ### Sample of jAER output from converted file from Baldwin dataset
-![bike_sample](https://github.com/SensorsINI/aedat4to2/sample-jaer-output.png "Sample AEDAT-2.0 output")
+![bike_sample](https://github.com/SensorsINI/aedat4to2/blob/master/sample-jaer-output.png "Sample AEDAT-2.0 output")
 
 # Limitations
 aedat4to2 now supports DVS events, IMU samples, and APS frames. Please report bugs using issue tracker.
