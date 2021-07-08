@@ -41,7 +41,8 @@ from pathlib import Path
 import \
     struct  # https://stackoverflow.com/questions/846038/convert-a-python-int-into-a-big-endian-string-of-bytes/12859903
 import easygui
-
+import locale
+locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
 
 class CustomFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
@@ -185,7 +186,7 @@ def main(argv=None):
             out.data.dvs.y = []
 
             # Frames
-            out.data.frame.samples = []
+            out.data.frame.samples = [] # np ndarray, [y,x,frame_num], with x=y=0 the UL corner using CV/DV convention
             out.data.frame.position = []
             out.data.frame.sizeAll = []
             out.data.frame.timeStamp = []
@@ -193,6 +194,8 @@ def main(argv=None):
             out.data.frame.frameEnd = []  # end of readout
             out.data.frame.expStart = []  # exposure start (before readout)
             out.data.frame.expEnd = []
+            out.data.frame.numDiffImages=0
+            out.data.frame.size=[]
 
             # IMU
             out.data.imu6.accelX = []
@@ -223,10 +226,10 @@ def main(argv=None):
             # loop through the "frames" stream
             if not args.no_frame:
                 log.debug(f'loading frames to memory')
-                with tqdm(generator(), desc='frames', unit=' fr') as pbar:
+                with tqdm(generator(), desc='frames', unit=' fr', maxinterval=1) as pbar:
                     for frame in (f['frames']):
                         out.data.frame.samples.append(
-                            frame.image)  # frame.image is ndarray(h,w,1) with 0-255 values ?? ADC has larger range, maybe clipped
+                            np.array(frame.image, dtype=np.uint8))  # frame.image is ndarray(h,w,1) with 0-255 values ?? ADC has larger range, maybe clipped
                         out.data.frame.position.append(frame.position)
                         out.data.frame.sizeAll.append(frame.size)
                         out.data.frame.timeStamp.append(frame.timestamp)
@@ -237,11 +240,11 @@ def main(argv=None):
                         pbar.update(1)
 
                 # Permute images via numpy
-                tmp = np.transpose(np.squeeze(np.array(out.data.frame.samples)), (1, 2, 0))
+                tmp = np.transpose(np.squeeze(np.array(out.data.frame.samples)), (1, 2, 0)) # make the frames x,y,frames
                 out.data.frame.numDiffImages = tmp.shape[2]
                 out.data.frame.size = out.data.frame.sizeAll[0]
-                out.data.frame.samples = tmp.tolist()
-                log.info(f'{out.data.frame.numDiffImages} frames')
+                out.data.frame.samples = tmp # leave frames as numpy array
+                log.info(f'{out.data.frame.numDiffImages} frames with size {out.data.frame.size}')
 
             # # loop through the "imu" stream
             if not args.no_imu:
@@ -271,31 +274,36 @@ def main(argv=None):
     # Add counts of jAER events
         out.data.dvs.numEvents = len(out.data.dvs.x)
         out.data.imu6.numEvents = len(out.data.imu6.accelX) * 7 if not args.no_imu else 0
-        out.data.frame.numEvents = (4 + 2 * width * height) * (out.data.frame.numDiffImages) if not args.no_frame else 0
+        out.data.frame.numEvents = (2 * width * height) * (out.data.frame.numDiffImages) if not args.no_frame else 0
 
         export_aedat_2(args, out, outputfile, height=height)
 
     log.debug('done')
 
 
-def export_aedat_2(args, out, filepath, height=260):
+def export_aedat_2(args, out, filename, height=260):
     """
     This function exports data to a .aedat file.
     The .aedat file format is documented here:
     http://inilabs.com/support/software/fileformat/
 
     @param out the data structure from above
-    @param filepath the full path to write to, .aedat output file
+    @param filename the full path to write to, .aedat2 output file
     @param height the size of the chip, to flip y coordinate for jaer compatibility
     """
 
     num_total_events = out.data.dvs.numEvents + out.data.imu6.numEvents + out.data.frame.numEvents
 
 
+    file_path=Path(filename)
     try:
-        with open(filepath, 'wb') as f:
+        f=open(filename, 'wb')
+    except IOError as x:
+        log.error(f'could not open {file_path.absolute()} for output (maybe opened in jAER already?): {str(x)}')
+    else:
+        with f:
             # Simple - events only - assume DAVIS
-            log.debug(f'saving {filepath}')
+            log.debug(f'saving {file_path.absolute()}')
 
             # CRLF \r\n is needed to not break header parsing in jAER
             f.write(b'#!AER-DAT2.0\r\n')
@@ -332,6 +340,9 @@ def export_aedat_2(args, out, filepath, height=260):
             xShiftBits = 12
             polShiftBits = 11
 
+
+
+
             y = np.array((height - 1) - out.data.dvs.y, dtype=uint32) << yShiftBits
             x = np.array(out.data.dvs.x, dtype=uint32) << xShiftBits
             pol = np.array(out.data.dvs.polarity, dtype=uint32) << polShiftBits
@@ -366,11 +377,14 @@ def export_aedat_2(args, out, filepath, height=260):
                 encoded_data = ((quantized_data&0xffff) << imuSampleShift) | (code << imuTypeShift) | (imuSampleSubtype << apsSubTypeShift) | (apsImuType<<apsDvsImuTypeShift)
                 return encoded_data
 
-            if args.no_imu: # TODO add frames condition
+            if args.no_imu and args.no_frame: # TODO add frames condition
                 all_timestamps=dvs_timestamps
                 all_addr=dvs_addr
             else:
+                # Make the IMU and frame data into timestamp and encoded AER addr arrays, then
+                # sort them together
 
+                # First IMU samples
                 imu_addr = np.zeros(out.data.imu6.numEvents, dtype=uint32)
                 imu_addr[0::7] = encode_imu(out.data.imu6.accelX, 0)
                 imu_addr[1::7] = encode_imu(out.data.imu6.accelY, 1)
@@ -381,36 +395,93 @@ def export_aedat_2(args, out, filepath, height=260):
                 imu_addr[6::7] = encode_imu(out.data.imu6.gyroZ, 6)
 
                 imu_timestamps = np.empty(out.data.imu6.numEvents, dtype=int64)
-                for i in range(7):
-                    imu_timestamps[i::7] = out.data.imu6.timeStamp
+                if out.data.imu6.numEvents>0:
+                    for i in range(7):
+                        imu_timestamps[i::7] = out.data.imu6.timeStamp
 
-                # Now we need to make a single stream of events and timestamps that are monotonic in timestamp order
-                # And we also need to preserve the IMU samples in order 0-6, since AEFileInputStream can only parse them in this order of events
-                # That means a slow iteration over all timestamps to take things in order
+                # Now frames
+                fr_timestamp=np.array(out.data.frame.timeStamp) # start of frame readout timestamps
+
+
+                # Now we need to make a single stream of events and timestamps that are monotonic in timestamp order.
+                # And we also need to preserve the IMU samples in order 0-6, since AEFileInputStream can only parse them in this order of events.
+                # And we need to insert the frame double reset/read samples to the jAER stream
+                # That means a slow iteration over all timestamps to take things in order.
                 # At least each list of timestamps is in order already
                 ldvs = len(dvs_timestamps)
                 limu = len(imu_timestamps)
-                maxlen=np.max([ldvs, limu])
-                i=0
-                id=0
-                ii=0
-                all_timestamps=np.zeros(maxlen,dtype=int64)
-                all_addr=np.zeros(maxlen,dtype=uint32)
-                with tqdm(total=maxlen,unit=' ev',desc='sorting') as pbar:
-                    while i<maxlen and (id< ldvs or ii< limu):
-                        if dvs_timestamps[id]<imu_timestamps[ii]:
+                nfr=len(fr_timestamp)
+                hw=(out.data.frame.size) if nfr>0 else (0,0)  # reset and signal samples from DDS readout
+                height=hw[1]
+                width=hw[0]
+                fr_len=height*width # reset + signal samples
+                # Add +4 exposure start/end and readout start/end events to total
+                tot_len_jaer_events=ldvs+limu+(nfr*(fr_len*2))
+                all_timestamps=np.zeros(tot_len_jaer_events,dtype=int64)
+                all_addr=np.zeros(tot_len_jaer_events,dtype=uint32)
+                max_len=np.max([ldvs, limu,nfr])
+                i=0 # overall counter
+                id=0 # dvs counter
+                ii=0 # imu counter
+                ifr=0 # frame counter
+
+                # We need to supply x and y address for every single APS samples in the x and y address fields,
+                # And we need to write the APS pixels in in particular order,
+                # at least start and end frame with LR and UL corners,
+                # since this is how the start and end of each frame is determined by the EventExtractor.
+
+                # jAER uses non-standard computer vision scheme with LL=0,0 and UR=h,w
+                # DV uses standard CV scheme of UL=0,0, LR=h,w
+
+                # From Davis346mini.java
+                # Inverted with respect to other 346 cameras.
+                # setApsFirstPixelReadOut(new Point(getSizeX() - 1, 0)); # start at LR
+                # setApsLastPixelReadOut(new Point(0, getSizeY() - 1)); # end at UL
+
+                if nfr>0: # make reset frame to store for each frame
+                    aps_xy_addresses=np.zeros([height,width],dtype=uint32)
+                    for yy in range(height):
+                        for xx in range(width):
+                            # fill address fields with APS pixel address
+                            # start with xx,yy=0,0 -> width-1,0
+                            aps_xy_addresses[yy,xx]=((width-xx-1)<<xShiftBits) | (yy<<yShiftBits)
+                    aps_xy_addresses=aps_xy_addresses.flatten()
+                    reset_fr=((1023*np.ones(fr_len,dtype=uint32))<<apsAdcShift)|(apsResetReadSubtype<<apsSubTypeShift)|(apsImuType<<apsDvsImuTypeShift)
+                    reset_fr=reset_fr|(aps_xy_addresses)
+
+                with tqdm(total=max_len,unit=' ev|imu|fr',desc='sorting') as pbar:
+                    while id< ldvs or ii< limu or ifr<nfr:
+                        # if (no IMU or frames) or (no more IMU or frames) or  (no frames and still IMU and dvs < IMU)            or             (no IMU and still frames and dvs<fr) or (DVS < IMU and DVS<fr)
+                        if (id<ldvs) and ((limu==0 and nfr==0) or (ii==limu and ifr==nfr) or (nfr==0 and  ii<limu and dvs_timestamps[id]<imu_timestamps[ii]) or (limu==0 and ifr<nfr and dvs_timestamps[id]<fr_timestamp[ifr]) \
+                                or (ii==limu or dvs_timestamps[id]<imu_timestamps[ii]) and ( ifr==nfr or dvs_timestamps[id]<fr_timestamp[ifr]) ):
+                            # take DVS event
                             all_timestamps[i]=dvs_timestamps[id]
                             all_addr[i]=dvs_addr[id]
                             i+=1
                             id+=1
-                        else:
+                        # now we know DVS is later than both IMU and frames, now check if IMU is less than frame time
+                        # if (IMU left) and (no more IMU or frames) and ( no frames or IMU < frame)
+                        elif (limu>0 and ii<limu) and ( (nfr==0 or ifr==nfr or imu_timestamps[ii]<fr_timestamp[ifr])):
+                            # take IMU sample
                             for k in range(7):
                                 all_timestamps[i]=imu_timestamps[ii]
                                 all_addr[i]=imu_addr[ii]
                                 i+=1
                                 ii+=1
-                        if i%100==0:
-                            pbar.update(100)
+                        # otherwise it must be frame
+                        elif (nfr>0 and ifr<nfr):
+                            # take frame
+                            all_timestamps[i:i+fr_len*2]=fr_timestamp[ifr] # broadcast all frame samples to same timestamp start of frame readout TODO fix to be frame exposure midpoint
+                            fr_samples=1023-np.squeeze(out.data.frame.samples[:,:,ifr]) # [y,x,frame_number], DV convention UL=0,0
+                            fr_samples=np.flip(fr_samples,0) # flip the y axis (first axis) to match jAER convention
+                            fr_vec=fr_samples.flatten().astype(uint32) # frame is flattened so that we start with pixel 0,0 at UL, then go to right across first row, then next row down, etc
+                            all_addr[i:i+fr_len]= reset_fr
+                            i+=fr_len
+                            all_addr[i:i+fr_len]=(aps_xy_addresses) | (fr_vec<<apsAdcShift)|(apsSignalReadSubtype<<apsSubTypeShift)|(apsImuType<<apsDvsImuTypeShift)
+                            i+=fr_len
+                            ifr+=1
+
+                        pbar.update(1)
 
 
             # DV uses int64 timestamps in us, but jaer uses int32, let's subtract the smallest timestamp from everyone
@@ -423,12 +494,14 @@ def export_aedat_2(args, out, filepath, height=260):
             output[0::2] = all_addr
             output[1::2] = all_timestamps  # set even elements to timestamps
             bigendian = output.newbyteorder().byteswap(inplace=True)  # Java is big endian, python is little endian
+            log.debug(f'writing {len(bigendian)} bytes to {file_path.absolute()}')
             count = f.write(bigendian) / 2  # write addresses and timestamps, write 4 byte data
             f.close()
-            log.info(f'wrote {count:10.3n} events to {filepath}')
-    except Exception as e:
-        log.error(f'could not open {filepath} for output (maybe opened in jAER already?): {str(e)}')
-
+            max_timestamp=all_timestamps[-1]
+            duration=max_timestamp*1e-6
+            dvs_rate_khz=ldvs/duration/1000
+            frame_rate_hz=nfr/duration
+            log.info(f'{file_path.absolute()} is {(tot_len_jaer_events*8)>>10:n} kB size, with duration {duration:.4n}s, containing {ldvs:n} DVS events at rate {dvs_rate_khz:.4n}kHz, {limu:n} IMU samples, and {nfr:n} frames at {frame_rate_hz:.4n}Hz')
 
 if __name__ == "__main__":
     main()
