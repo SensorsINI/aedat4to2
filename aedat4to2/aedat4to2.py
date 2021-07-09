@@ -501,7 +501,8 @@ def export_aedat_2(args, out, filename, height=260):
             duration=max_timestamp*1e-6
             dvs_rate_khz=ldvs/duration/1000
             frame_rate_hz=nfr/duration
-            log.info(f'{file_path.absolute()} is {(tot_len_jaer_events*8)>>10:n} kB size, with duration {duration:.4n}s, containing {ldvs:n} DVS events at rate {dvs_rate_khz:.4n}kHz, {limu:n} IMU samples, and {nfr:n} frames at {frame_rate_hz:.4n}Hz')
+            imu_rate_khz=limu/7/duration/1000 # divide by 7 since each IMU sample is 7 jAER events
+            log.info(f'{file_path.absolute()} is {(tot_len_jaer_events*8)>>10:n} kB size, with duration {duration:.4n}s, containing {ldvs:n} DVS events at rate {dvs_rate_khz:.4n}kHz, {limu:n} IMU samples at rate {imu_rate_khz:.4n}kHz, and {nfr:n} frames at rate {frame_rate_hz:.4n}Hz')
 
 if __name__ == "__main__":
     main()
