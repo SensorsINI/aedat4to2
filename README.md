@@ -21,8 +21,12 @@ conda create --name aedat4to2 python=3.8
 conda activate aedat4to2
 ````
 
+To install directly from git into your activated conda environment
+````console
+pip install git+https://github.com/SensorsINI/aedat4to2.git
+````
 
-Install on system path to run as aedat4to2. Note the -e that allows your edits to aedata4to2/aedat4to2.py to instantly have effect.
+From clone, install on system path to run as aedat4to2. Note the -e that allows your edits to aedata4to2/aedat4to2.py to instantly have effect.
 ````shell
 pip install -e .
 ````
