@@ -78,7 +78,7 @@ sorting: 3656318 ev|imu|fr [00:07, 509197.46 ev|imu|fr/s]
 nts at rate 180.2kHz, 141,169 IMU samples, and 992 frames at 49.18Hz (aedat4to2.py:504)
 ```
 
-You can convert a bunch of files by just suppplying them on the command line.
+You can convert a bunch of files by just supplying them on the command line.
 
 For windows users suffering from cmd.exe limitations, you can start Anaconda Powershell prompt, activate the conda enviroment, and use 
 this magic powershell command to process a list of files

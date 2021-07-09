@@ -1,45 +1,18 @@
 #!/usr/bin/python
 
+"""
+aedat4to2 converter main script
+Author: Tobi Delbruck
+https://github.com/SensorsINI/aedat4to2
+"""
 
-"""
-data = {'e_p': e_p,
-            'e_ts': e_ts,
-            'e_x': e_x,
-            'e_y': e_y,
-            'f_image': f_image,
-            'f_position': f_position,
-            'f_size': f_size,
-            'f_ts': f_ts,
-            'f_framestart': f_framestart,
-            'f_frameend': f_frameend,
-            'f_expstart': f_expstart,
-            'f_expend': f_expend,
-            'i_ax': i_ax,
-            'i_ay': i_ay,
-            'i_az': i_az,
-            'i_gx': i_gx,
-            'i_gy': i_gy,
-            'i_gz': i_gz,
-            'i_mx': i_mx,
-            'i_my': i_my,
-            'i_mz': i_mz,
-            'i_temp': i_temp,
-            'i_ts': i_ts
-           }
-"""
-import json
-import os
 import sys, argparse
-import tempfile
-
 from dv import AedatFile
 import numpy as np
 from numpy import uint32, int32, int64, int16
 from tqdm import tqdm
 import logging
 from pathlib import Path
-import \
-    struct  # https://stackoverflow.com/questions/846038/convert-a-python-int-into-a-big-endian-string-of-bytes/12859903
 import easygui
 import locale
 locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
@@ -279,7 +252,6 @@ def main(argv=None):
         export_aedat_2(args, out, outputfile, height=height)
 
     log.debug('done')
-
 
 def export_aedat_2(args, out, filename, height=260):
     """
