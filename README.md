@@ -1,17 +1,19 @@
 # aedat4to2
-Convert AEDAT4 files from Inivation's DV https://gitlab.com/inivation/dv/dv-python into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
+_aedat4to2_ converts AEDAT4 files from Inivation's DV https://gitlab.com/inivation/dv/dv-python into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
 
-Based on AEDAT file format specifications in https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html
+Based on AEDAT file format specifications in https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html .
 
 Python is required (recommend Anaconda).
 
-Started from useful script https://github.com/bald6354/aedat4tomat
+Started from useful script https://github.com/bald6354/aedat4tomat .
 
 ### Sample of jAER output from converted file from Baldwin dataset
 ![bike_sample](https://github.com/SensorsINI/aedat4to2/blob/master/sample-jaer-output.png "Sample AEDAT-2.0 output")
 
 # Limitations
-aedat4to2 now supports DVS events, IMU samples, and APS frames. Please report bugs using issue tracker.
+_aedat4to2_ now supports DVS events, IMU samples, and APS frames. Please report bugs using issue tracker.
+
+_aedat4to2_ sets the smallest timestamp to be 0 in the output file (to help deal with limitations of int32 timestamp from course int64 timestamp).
 
 
 ## Installation
