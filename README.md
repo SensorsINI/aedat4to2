@@ -1,5 +1,5 @@
 # aedat4to2
-_aedat4to2_ converts AEDAT4 files from Inivation's DV https://gitlab.com/inivation/dv/dv-python into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
+_aedat4to2_ converts AEDAT4 files from Inivation's [python DV](https://gitlab.com/inivation/dv/dv-python)  into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
 
 Based on AEDAT file format specifications in https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html .
 
@@ -41,8 +41,10 @@ pip install -r requirements.txt
 ````
 
 ### Windows DV users
-If you have not installed DV, you might need to go through one-time installation of
-MS visual studio build tools to install DV which depends on a package that does not supply pre-built binaries.
+If you have not installed [python DV](https://gitlab.com/inivation/dv/dv-python), you might need to go through one-time installation of
+MS visual studio build tools to install [inivation DV software](https://inivation.com/dvp/dvsoftware/) which depends on a package that does not supply pre-built binaries.
+
+See the [inivation python DV docs](https://gitlab.com/inivation/dv/dv-python)
 
 ## Usage
 ````console
@@ -80,7 +82,7 @@ sorting: 3656318 ev|imu|fr [00:07, 509197.46 ev|imu|fr/s]
 nts at rate 180.2kHz, 141,169 IMU samples, and 992 frames at 49.18Hz (aedat4to2.py:504)
 ```
 
-You can convert a bunch of files by just supplying them on the command line.
+You can convert one or more files by just supplying them on the command line.
 
 For windows users suffering from cmd.exe limitations, you can start Anaconda Powershell prompt, activate the conda enviroment, and use 
 this magic powershell command to process a list of files

@@ -72,6 +72,8 @@ def main(argv=None):
     inputfile = None
     outputfile = None
     filelist = None
+    po=None
+
     parser = argparse.ArgumentParser(
         description='Convert files from AEDAT-4 to AEDAT-2 format. Either provide a single -i input_file -o output_file, or a list of .aedat4 input files.')
     parser.add_argument('-o', help='output .aedat2 file name')
@@ -85,21 +87,24 @@ def main(argv=None):
                         help='Do not process APS sample frames (which are very slow to extract)')
     args, filelist = parser.parse_known_args()
 
-    if len(sys.argv)<=1:
-        filelist=easygui.fileopenbox(msg='Select .aedat4 files to convert',
-                                      title='aedat4to2',
-                                      filetypes=[['*.aedat4','AEDAT-4 files']],
-                                      multiple=True,
-                                      default='*.aedat4')
-        log.info(f'selected {filelist} with file dialog')
-    imu_scale_warning_printed = False
-
     if args.verbose:
         log.setLevel(logging.DEBUG)
     elif args.quiet:
         log.setLevel(logging.WARNING)
     else:
         log.setLevel(logging.INFO)
+
+    if len(filelist)<=1:
+        filelist=easygui.fileopenbox(msg='Select .aedat4 files to convert',
+                                      title='aedat4to2',
+                                      filetypes=[['*.aedat4','AEDAT-4 files']],
+                                      multiple=True,
+                                      default='*.aedat4')
+        if filelist is None:
+            log.info('no file selected, quitting')
+            quit(0)
+        log.info(f'selected {filelist} with file dialog')
+    imu_scale_warning_printed = False
 
     if args.i is not None:
         inputfile = args.i
@@ -118,11 +123,13 @@ def main(argv=None):
         if p.suffix=='.aedat2':
             log.error(f'skipping AEDAT-2.0 {p.absolute()} as input')
             continue
-        log.debug(f'loading {file}')
+        log.debug(f'reading input {p}')
         if multiple:
             p = Path(file)
-            outputfile = p.stem + '.aedat2'
-        po = Path(outputfile)
+
+            po = p.with_name(p.stem + '.aedat2') # output is input with .aedat2 extension
+        else:
+            po = Path(outputfile)
         if not args.overwrite and po.is_file():
             log.error(f'{po.absolute()} exists, will not overwrite')
             continue
@@ -249,7 +256,7 @@ def main(argv=None):
         out.data.imu6.numEvents = len(out.data.imu6.accelX) * 7 if not args.no_imu else 0
         out.data.frame.numEvents = (2 * width * height) * (out.data.frame.numDiffImages) if not args.no_frame else 0
 
-        export_aedat_2(args, out, outputfile, height=height)
+        export_aedat_2(args, out, po, height=height)
 
     log.debug('done')
 
@@ -265,6 +272,7 @@ def export_aedat_2(args, out, filename, height=260):
     """
 
     num_total_events = out.data.dvs.numEvents + out.data.imu6.numEvents + out.data.frame.numEvents
+    printed_stats_first_frame=False
 
 
     file_path=Path(filename)
@@ -444,9 +452,16 @@ def export_aedat_2(args, out, filename, height=260):
                         elif (nfr>0 and ifr<nfr):
                             # take frame
                             all_timestamps[i:i+fr_len*2]=fr_timestamp[ifr] # broadcast all frame samples to same timestamp start of frame readout TODO fix to be frame exposure midpoint
-                            fr_samples=1023-np.squeeze(out.data.frame.samples[:,:,ifr]) # [y,x,frame_number], DV convention UL=0,0
+                            fr_samples=np.squeeze(out.data.frame.samples[:,:,ifr]) # [y,x,frame_number], DV convention UL=0,0
                             fr_samples=np.flip(fr_samples,0) # flip the y axis (first axis) to match jAER convention
                             fr_vec=fr_samples.flatten().astype(uint32) # frame is flattened so that we start with pixel 0,0 at UL, then go to right across first row, then next row down, etc
+                            if not printed_stats_first_frame:
+                                printed_stats_first_frame=True
+                                min=np.min(fr_vec)
+                                max=np.max(fr_vec)
+                                mean=np.mean(fr_vec)
+                                log.info(f'first frame has sample min={min} max={max} mean={mean}')
+
                             all_addr[i:i+fr_len]= reset_fr
                             i+=fr_len
                             all_addr[i:i+fr_len]=(aps_xy_addresses) | (fr_vec<<apsAdcShift)|(apsSignalReadSubtype<<apsSubTypeShift)|(apsImuType<<apsDvsImuTypeShift)
