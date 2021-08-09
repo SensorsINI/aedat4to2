@@ -87,7 +87,7 @@ def main(argv=None):
                         help='Do not process IMU samples (which are very slow to extract)')
     parser.add_argument('--no_frame', dest='no_frame', action='store_true',
                         help='Do not process APS sample frames (which are very slow to extract)')
-    args, filelist = parser.parse_known_args()
+    args, filelist = parser.parse_known_args() # filelist is list [] of remaining arguments (list of files to be converted)
 
     if args.verbose:
         log.setLevel(logging.DEBUG)
@@ -96,7 +96,7 @@ def main(argv=None):
     else:
         log.setLevel(logging.INFO)
 
-    if len(filelist)<=1:
+    if len(filelist)==0:
         filelist=easygui.fileopenbox(msg='Select .aedat4 files to convert',
                                       title='aedat4to2',
                                       filetypes=[['*.aedat4','AEDAT-4 files']],
