@@ -15,6 +15,8 @@ import logging
 from pathlib import Path
 import easygui
 import locale
+
+MAX_ADC = 1023
 locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
 
 class CustomFormatter(logging.Formatter):
@@ -131,8 +133,17 @@ def main(argv=None):
         else:
             po = Path(outputfile)
         if not args.overwrite and po.is_file():
-            log.error(f'{po.absolute()} exists, will not overwrite')
-            continue
+            overwrite=query_yes_no(f'{po.absolute()} exists, ovwrite it?')
+            if not overwrite:
+                log.info(f'{po.absolute()} exists, will not overwrite')
+                continue
+            else:
+                try:
+                    log.debug(f'deleting existing {po}')
+                    po.unlink()
+                except Exception as e:
+                    log.warning(f'could not delete: {e}')
+                    pass
         if po.is_file():
             try:
                 with open(outputfile, 'wb') as f:
@@ -426,7 +437,7 @@ def export_aedat_2(args, out, filename, height=260):
                             # start with xx,yy=0,0 -> width-1,0
                             aps_xy_addresses[yy,xx]=((width-xx-1)<<xShiftBits) | (yy<<yShiftBits)
                     aps_xy_addresses=aps_xy_addresses.flatten()
-                    reset_fr=((1023*np.ones(fr_len,dtype=uint32))<<apsAdcShift)|(apsResetReadSubtype<<apsSubTypeShift)|(apsImuType<<apsDvsImuTypeShift)
+                    reset_fr= ((MAX_ADC * np.ones(fr_len, dtype=uint32)) << apsAdcShift) | (apsResetReadSubtype << apsSubTypeShift) | (apsImuType << apsDvsImuTypeShift)
                     reset_fr=reset_fr|(aps_xy_addresses)
 
                 with tqdm(total=max_len,unit=' ev|imu|fr',desc='sorting') as pbar:
@@ -452,7 +463,7 @@ def export_aedat_2(args, out, filename, height=260):
                         elif (nfr>0 and ifr<nfr):
                             # take frame
                             all_timestamps[i:i+fr_len*2]=fr_timestamp[ifr] # broadcast all frame samples to same timestamp start of frame readout TODO fix to be frame exposure midpoint
-                            fr_samples=np.squeeze(out.data.frame.samples[:,:,ifr]) # [y,x,frame_number], DV convention UL=0,0
+                            fr_samples= MAX_ADC - np.squeeze(out.data.frame.samples[:, :, ifr]) # [y,x,frame_number], DV convention UL=0,0
                             fr_samples=np.flip(fr_samples,0) # flip the y axis (first axis) to match jAER convention
                             fr_vec=fr_samples.flatten().astype(uint32) # frame is flattened so that we start with pixel 0,0 at UL, then go to right across first row, then next row down, etc
                             if not printed_stats_first_frame:
@@ -490,6 +501,37 @@ def export_aedat_2(args, out, filename, height=260):
             frame_rate_hz=nfr/duration
             imu_rate_khz=limu/7/duration/1000 # divide by 7 since each IMU sample is 7 jAER events
             log.info(f'{file_path.absolute()} is {(tot_len_jaer_events*8)>>10:n} kB size, with duration {duration:.4n}s, containing {ldvs:n} DVS events at rate {dvs_rate_khz:.4n}kHz, {limu:n} IMU samples at rate {imu_rate_khz:.4n}kHz, and {nfr:n} frames at rate {frame_rate_hz:.4n}Hz')
+
+# https://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input/3041990
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+            It must be "yes" (the default), "no" or None (meaning
+            an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == "":
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 if __name__ == "__main__":
     main()
