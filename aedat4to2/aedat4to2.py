@@ -133,16 +133,16 @@ def main(argv=None):
         else:
             po = Path(outputfile)
         if not args.overwrite and po.is_file():
-            overwrite=query_yes_no(f'{po.absolute()} exists, ovwrite it?')
+            overwrite=query_yes_no(f'{po.absolute()} exists, overwrite it?')
             if not overwrite:
                 log.info(f'{po.absolute()} exists, will not overwrite')
                 continue
             else:
                 try:
-                    log.debug(f'deleting existing {po}')
+                    log.debug(f'overwriting existing {po}')
                     po.unlink()
                 except Exception as e:
-                    log.warning(f'could not delete: {e}')
+                    log.warning(f'could not delete {po}: {e}')
                     pass
         if po.is_file():
             try:
@@ -468,9 +468,9 @@ def export_aedat_2(args, out, filename, height=260):
                             fr_vec=fr_samples.flatten().astype(uint32) # frame is flattened so that we start with pixel 0,0 at UL, then go to right across first row, then next row down, etc
                             if not printed_stats_first_frame:
                                 printed_stats_first_frame=True
-                                min=np.min(fr_vec)
-                                max=np.max(fr_vec)
-                                mean=np.mean(fr_vec)
+                                min=MAX_ADC-np.min(fr_vec)
+                                max=MAX_ADC-np.max(fr_vec)
+                                mean=MAX_ADC-np.mean(fr_vec)
                                 log.info(f'first frame has sample min={min} max={max} mean={mean}')
 
                             all_addr[i:i+fr_len]= reset_fr
