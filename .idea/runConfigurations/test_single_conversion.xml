@@ -15,7 +15,7 @@
     <option name="SCRIPT_NAME" value="aedat4to2.py" />
     <option name="PARAMETERS" value="sample1.aedat4" />
     <option name="SHOW_COMMAND_LINE" value="false" />
-    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />
     <option name="REDIRECT_INPUT" value="false" />
     <option name="INPUT_FILE" value="" />
