@@ -17,7 +17,7 @@ _aedat4to2_ sets the smallest timestamp to be 0 in the output file (to help deal
 
 
 ## Installation
-Recommended: Make o use a conda environment.... maybe it is the same one as dv-python uses.
+Recommended: Make (or use) a conda environment.... maybe it is the same one as dv-python uses.
 ````shell
 conda create --name aedat4to2 python=3.8
 conda activate aedat4to2
@@ -28,16 +28,9 @@ To install directly from git into your activated conda environment
 pip install git+https://github.com/SensorsINI/aedat4to2.git
 ````
 
-From clone, install on system path to run as aedat4to2. Note the -e that allows your edits to aedata4to2/aedat4to2.py to instantly have effect.
+Or, from your clone, install on system path to run as aedat4to2. Note the -e that allows your edits to aedata4to2/aedat4to2.py to instantly have effect.
 ````shell
 pip install -e .
-````
-
-## If you just want to develop and not install.
-
-Install the requirements....
-````shell
-pip install -r requirements.txt
 ````
 
 ### Windows DV users
@@ -65,21 +58,22 @@ optional arguments:
 ````
 
 # Example Conversion:
-Convert a single file, assuming you run within the module folder aedat4to2
+Convert a single file, assuming you run within the module folder aedat4to2, using git bash terminal:
 ```console
-aedat4to2 --overwrite aedat4to2\sample1.aedat4
-2021-07-08 16:09:30,273 - aedat4to2.aedat4to2 - INFO - overwriting F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\sample1.aedat2 (aedat4to2.py:163)
-2021-07-08 16:09:30,274 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:173)
-2021-07-08 16:09:30,564 - aedat4to2.aedat4to2 - INFO - 3635159 DVS events (aedat4to2.py:220)
-frames: 992 fr [00:00, 4488.69 fr/s]
-2021-07-08 16:09:30,814 - aedat4to2.aedat4to2 - INFO - 992 frames with size (346, 260) (aedat4to2.py:247)
-IMU: 0 sample [00:00, ? sample/s]2021-07-08 16:09:30,815 - aedat4to2.aedat4to2 - WARNING - IMU sample found: IMU samples will be converted to jAER AEDAT-2.0 assuming full scale 2000 DPS rotation an
-d 8g acceleration (aedat4to2.py:256)
-IMU: 20167 sample [00:01, 12683.08 sample/s]
-2021-07-08 16:09:32,407 - aedat4to2.aedat4to2 - INFO - 20167 IMU samples (aedat4to2.py:271)
-sorting: 3656318 ev|imu|fr [00:07, 509197.46 ev|imu|fr/s]
-2021-07-08 16:09:42,397 - aedat4to2.aedat4to2 - INFO - F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\sample1.aedat2 is 1,423,882 kB size, with duration 20.17s, containing 3,635,159 DVS eve
-nts at rate 180.2kHz, 141,169 IMU samples, and 992 frames at 49.18Hz (aedat4to2.py:504)
+$ aedat4to2 aedat4to2/sample1.aedat4
+F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\aedat4to2\sample1.aedat2 exists, overwrite it? [Y/n] y
+2021-08-10 09:46:21,349 - aedat4to2.aedat4to2 - INFO - sensor size width=346 height=260 (aedat4to2.py:164)
+2021-08-10 09:46:21,729 - aedat4to2.aedat4to2 - INFO - 3635159 DVS events (aedat4to2.py:211)
+frames: 992 fr [00:00, 3701.48 fr/s]
+2021-08-10 09:46:22,035 - aedat4to2.aedat4to2 - INFO - 992 frames with size (346, 260) (aedat4to2.py:238)
+IMU: 0 sample [00:00, ? sample/s]2021-08-10 09:46:22,037 - aedat4to2.aedat4to2 - WARNING - IMU sample found: IMU samples will be converted to jAER AEDAT-2.0 assuming full scale 2000 DPS rotation and 8g acceleration (aedat4to2.py:247)
+IMU: 20167 sample [00:01, 12525.64 sample/s]
+2021-08-10 09:46:23,646 - aedat4to2.aedat4to2 - INFO - 20167 IMU samples (aedat4to2.py:262)
+sorting:   0%|                                                                                                                                                                                                                                | 0/3635159 [00:00<?, ? ev|imu|fr/s]2
+021-08-10 09:46:23,769 - aedat4to2.aedat4to2 - INFO - first frame has sample min=185 max=0 mean=77.37438861716316 (aedat4to2.py:474)
+sorting: 3656318 ev|imu|fr [00:07, 478722.32 ev|imu|fr/s]
+2021-08-10 09:46:34,155 - aedat4to2.aedat4to2 - INFO - F:\tobi\Dropbox (Personal)\GitHub\SensorsINI\aedat4to2\aedat4to2\sample1.aedat2 is 1,423,882 kB size, with duration 20.17s, containing 3,635,159 DVS events at rate 180.2kHz, 141,169 IMU samples at rate 0.9999kHz, and 992
+ frames at rate 49.18Hz (aedat4to2.py:503)
 ```
 
 You can convert one or more files by just supplying them on the command line.
