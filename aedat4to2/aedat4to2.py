@@ -17,6 +17,9 @@ import easygui
 import locale
 
 MAX_ADC = 1023
+GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT=1000
+ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT=8
+
 locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
 
 class CustomFormatter(logging.Formatter):
@@ -85,6 +88,8 @@ def main(argv=None):
     parser.add_argument('--overwrite', dest='overwrite', action='store_true', help='Overwrite existing output files')
     parser.add_argument('--no_imu', dest='no_imu', action='store_true',
                         help='Do not process IMU samples (which are very slow to extract)')
+    parser.add_argument('--imu', nargs='+', type=int, default=[GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT, ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT],
+                        help='Use IMU full scale values GYRO ACCEL, e.g. 1000 8 for 1000 deg/s and 8 gravities to encode AEDAT-2.0 values')
     parser.add_argument('--no_frame', dest='no_frame', action='store_true',
                         help='Do not process APS sample frames (which are very slow to extract)')
     args, filelist = parser.parse_known_args() # filelist is list [] of remaining arguments (list of files to be converted)
@@ -115,6 +120,22 @@ def main(argv=None):
 
     multiple = outputfile is None
 
+    imu_scale=args.imu
+    if(len(imu_scale)!=2):
+        log.error('--imu needs 2 arguments, e.g. --imu 500 2 for 500 deg/s and 2g full scale value encoding')
+        quit(1)
+
+    imu_gyro_scale=imu_scale[0]
+    imu_accel_scale=imu_scale[1]
+
+    if not imu_gyro_scale in [250,500,1000,2000]:
+        log.error(f'--imu gyro scale "{imu_gyro_scale}" not valid, must be one of [250,500,1000,2000]')
+        quit(1)
+
+    if not imu_accel_scale in [2,4,8,16]:
+        log.error(f'--imu accelerometer scale "{imu_accel_scale}" not valid, must be one of [2,4,8,16]')
+        quit(1)
+
     if inputfile is not None: filelist = [inputfile]
 
     for file in filelist:
@@ -142,8 +163,8 @@ def main(argv=None):
                     log.debug(f'overwriting existing {po}')
                     po.unlink()
                 except Exception as e:
-                    log.warning(f'could not delete {po}: {e}')
-                    pass
+                    log.error(f'could not delete {po} (maybe it is open in jAER?): {e}')
+                    quit(1)
         if po.is_file():
             try:
                 with open(outputfile, 'wb') as f:
@@ -188,7 +209,6 @@ def main(argv=None):
             out.data.frame.numDiffImages=0
             out.data.frame.size=[]
 
-            # IMU
             out.data.imu6.accelX = []
             out.data.imu6.accelY = []
             out.data.imu6.accelZ = []
@@ -243,9 +263,9 @@ def main(argv=None):
 
                 with tqdm(generator(), desc='IMU', unit=' sample') as pbar:
                     for i in (f['imu']):
-                        if not imu_scale_warning_printed:
+                        if not imu_scale_warning_printed and imu_gyro_scale==GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT and imu_accel_scale==ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT:
                             log.warning(
-                                f'IMU sample found: IMU samples will be converted to jAER AEDAT-2.0 assuming full scale 2000 DPS rotation and 8g acceleration')
+                                f'IMU sample found: IMU samples will be converted to jAER AEDAT-2.0 assuming default full scale {GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT} deg/s rotation and {ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT}g acceleration. Use --imu option to change output scaling.')
                             imu_scale_warning_printed = True
                         a = i.accelerometer
                         g = i.gyroscope
@@ -271,15 +291,17 @@ def main(argv=None):
 
     log.debug('done')
 
-def export_aedat_2(args, out, filename, height=260):
+def export_aedat_2(args, out, filename, height=260, gyro_scale=GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT, accel_scale=ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT):
     """
     This function exports data to a .aedat file.
     The .aedat file format is documented here:
     http://inilabs.com/support/software/fileformat/
 
-    @param out the data structure from above
-    @param filename the full path to write to, .aedat2 output file
-    @param height the size of the chip, to flip y coordinate for jaer compatibility
+    @param out: the data structure from above
+    @param filename: the full path to write to, .aedat2 output file
+    @param height: the size of the chip, to flip y coordinate for jaer compatibility
+    @param gyro_scale: the full scale value of gyro in deg/s
+    @param accel_scale: the full scale value of acceleratometer in m/s^2
     """
 
     num_total_events = out.data.dvs.numEvents + out.data.imu6.numEvents + out.data.frame.numEvents
@@ -341,27 +363,45 @@ def export_aedat_2(args, out, filename, height=260):
             dvs_timestamps = np.array(out.data.dvs.timeStamp).astype(int64)  # still int64 from DV
 
             # copied from jAER for IMU sample scaling https://github.com/SensorsINI/jaer/blob/master/src/eu/seebetter/ini/chips/davis/imu/IMUSample.java
-            accelSensitivityScaleFactorGPerLsb = 8192
-            gyroSensitivityScaleFactorDegPerSecPerLsb = 65.5
-            temperatureScaleFactorDegCPerLsb = 340
-            temperatureOffsetDegC = 35
+            accelSensitivityScaleFactorGPerLsb = 1/8192.
+            gyroSensitivityScaleFactorDegPerSecPerLsb = 1/65.5
+            temperatureScaleFactorDegCPerLsb = 1/340.
+            temperatureOffsetDegC = 35.
 
-            def encode_imu(data, code):
+            def encode_imu(data, code,  gyro_scale=GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT, accel_scale=ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT):
                 """
-                Encodes array of IMU data to jAER int32 addresses
+                Encodes array of IMU data to jAER int32 addresses, assuming https://www.cdiweb.com/datasheets/invensense/ps-mpu-6100a.pdf IMU as used in DAVIS cameras.
                 :param data: array of float IMU data
                 :param code: the IMU data type code for this array
-                :return: the sample AER addressess
+                :param gyro_scale: the full scale value of gyro in deg/s
+                :param accel_scale: the full scale value of acceleratometer in m/s^2
+
+                 :return: the sample AER addressess
                 """
                 data = np.array(data)  # for speed and operations
+                acc_scale=accelSensitivityScaleFactorGPerLsb * (accel_scale/ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT)
                 if code == 0:  # accelX
-                    quantized_data = (-data * accelSensitivityScaleFactorGPerLsb).astype(int16)
+                    quantized_data = (-data / acc_scale ).astype(int16)
                 elif code == 1 or code == 2:  # acceleration Y,Z
-                    quantized_data = (data * accelSensitivityScaleFactorGPerLsb).astype(int16)
+                    quantized_data = (data / acc_scale).astype(int16)
                 elif code == 3:  # temperature
                     quantized_data = (data * temperatureScaleFactorDegCPerLsb - temperatureOffsetDegC).astype(int16)
-                elif code == 4 or code == 5 or code == 6:
-                    quantized_data = (data * gyroSensitivityScaleFactorDegPerSecPerLsb).astype(int16)
+                elif code == 4 : # gyro x
+                    # NOTE minus here on yaw, no minus on pitch, to adapt inivation IMU6 type to jaer convention for IMU rotation signs, but no minus for Z (r
+
+                    # jaer encodes the IMU gyro data as
+                    # roll (z) positive clockwise facing out from camera
+                    # tilt (X) positive tilt up
+                    # yaw (or pan) (Y) positive is yaw right
+
+                    # inivation encodes IMU data as float value of actual deg/s.
+                    # From [AEDAT_file_formats](https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html)
+                    # IMU 6-axes Event
+                    # The X, Y and Z axes are referred to the camera plane. X increases to the right, Y going up and Z towards where the lens is pointing. Rotation for the gyroscope is counter-clockwise along the increasing axis, for all three axes.
+
+                    quantized_data = ((data) / (gyroSensitivityScaleFactorDegPerSecPerLsb * (gyro_scale/GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT)) ).astype(int16)
+                elif code == 5 or code == 6: # gyro y,z
+                    quantized_data = ((-data) / (gyroSensitivityScaleFactorDegPerSecPerLsb * (gyro_scale/GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT)) ).astype(int16)
                 else:
                     raise ValueError(f'code {code} is not valid')
 
