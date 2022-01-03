@@ -7,8 +7,13 @@ Python is required (recommend Anaconda).
 
 Started from useful script https://github.com/bald6354/aedat4tomat .
 
-### Sample of jAER output from converted file from Baldwin DVSMOTION20 dataset
+### Sample of jAER output from converted file from Baldwin [DVSNOISE20 dataset](https://sites.google.com/a/udayton.edu/issl/software/dataset)
 ![bike_sample](https://github.com/SensorsINI/aedat4to2/blob/master/sample-jaer-output.png "Sample AEDAT-2.0 output")
+
+# Version history
+- 2.1: Fixed IMU sign and added IMU scaling argument --imu
+- 2.0 Added frames and IMU events 
+- 1.0 initial version, only did DVS events
 
 # Limitations
 _aedat4to2_ now supports DVS events, IMU samples, and APS frames. Please report bugs using issue tracker.
