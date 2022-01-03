@@ -49,19 +49,25 @@ See the [inivation python DV docs](https://gitlab.com/inivation/dv/dv-python)
 ## Usage
 ````console
 aedat4to2 -h
-usage: aedat4to2 [-h] [-o O] [-i I] [-q] [-v] [--overwrite] [--no_imu] [--no_frame]
+usage: aedat4to2.py [-h] [-o O] [-i I] [-q] [-v] [--overwrite] [--no_imu]
+                    [--imu IMU [IMU ...]] [--no_frame]
 
-Convert files from AEDAT-4 to AEDAT-2 format. Either provide a single -i input_file -o output_file, or a list of .aedat4 input files.
+Convert files from AEDAT-4 to AEDAT-2 format. Either provide a single -i
+input_file -o output_file, or a list of .aedat4 input files.
 
 optional arguments:
-  -h, --help   show this help message and exit
-  -o O         output .aedat2 file name
-  -i I         input .aedat4 file name
-  -q           Turn off all output other than warnings and errors
-  -v           Turn on verbose output
-  --overwrite  Overwrite existing output files
-  --no_imu     Do not process IMU samples (which are very slow to extract)
-  --no_frame   Do not process APS sample frames (which are very slow to extract)
+  -h, --help           show this help message and exit
+  -o O                 output .aedat2 file name
+  -i I                 input .aedat4 file name
+  -q                   Turn off all output other than warnings and errors
+  -v                   Turn on verbose output
+  --overwrite          Overwrite existing output files
+  --no_imu             Do not process IMU samples (which are very slow to
+                       extract)
+  --imu IMU [IMU ...]  Use IMU full scale values GYRO ACCEL, e.g. 1000 8 for
+                       1000 deg/s and 8 gravities to encode AEDAT-2.0 values
+  --no_frame           Do not process APS sample frames (which are very slow
+                       to extract)
 ````
 
 # Example Conversion:

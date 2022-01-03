@@ -17,7 +17,7 @@ import easygui
 import locale
 
 MAX_ADC = 1023
-GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT=1000
+GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT=1000  # default hardware values in jAER for Davis cameras; see ImuControl.loadPreferences, line 178 in jAER
 ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT=8
 
 locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
