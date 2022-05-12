@@ -5,8 +5,10 @@ aedat4to2 converter main script
 Author: Tobi Delbruck
 https://github.com/SensorsINI/aedat4to2
 """
-
+import os
 import sys, argparse
+import tempfile
+
 from dv import AedatFile
 import numpy as np
 from numpy import uint32, int32, int64, int16
@@ -19,6 +21,7 @@ import locale
 MAX_ADC = 1023
 GYRO_FULL_SCALE_DEG_PER_SEC_DEFAULT=1000  # default hardware values in jAER for Davis cameras; see ImuControl.loadPreferences, line 178 in jAER
 ACCEL_FULL_SCALE_M_PER_S_SQ_DEFAULT=8
+LAST_FILE_NAME_FILE='aedat4to2_last_file_chosen.txt'
 
 locale.setlocale(locale.LC_ALL, '') # print numbers with thousands separators
 
@@ -102,15 +105,29 @@ def main(argv=None):
         log.setLevel(logging.INFO)
 
     if len(filelist)==0:
+
+        fn=os.path.join(tempfile.gettempdir(),LAST_FILE_NAME_FILE)
+        default = '*.aedat4'
+        try:
+            with open(fn,'r') as f:
+                default=f.read()
+        except:
+            pass
         filelist=easygui.fileopenbox(msg='Select .aedat4 files to convert',
                                       title='aedat4to2',
                                       filetypes=[['*.aedat4','AEDAT-4 files']],
                                       multiple=True,
-                                      default='*.aedat4')
+                                      default=default)
         if filelist is None:
             log.info('no file selected, quitting')
             quit(0)
         log.info(f'selected {filelist} with file dialog')
+
+        try:
+            with open(fn, 'w') as f:
+                f.write(filelist[0])
+        except:
+            pass
     imu_scale_warning_printed = False
 
     if args.i is not None:
@@ -167,7 +184,7 @@ def main(argv=None):
                     quit(1)
         if po.is_file():
             try:
-                with open(outputfile, 'wb') as f:
+                with open(po, 'wb') as f:
                     pass
             except IOError as x:
                 log.error(f'cannot open {po.absolute()} for output; maybe it is open in jAER?')
@@ -180,6 +197,13 @@ def main(argv=None):
             if f.version != 4:
                 log.error(f'AEDAT version must be 4; this file has version {f.version}')
                 continue
+
+            if not ('frames' in f.names):
+                args.no_frame = True
+                log.info('there are no frames in this file')
+            if not ('imu' in f.names):
+                log.info('there are no IMU samples in this file')
+                args.no_imu = True
 
             height, width = f['events'].size
             log.info(f'sensor size width={width} height={height}')
@@ -220,7 +244,9 @@ def main(argv=None):
 
             data = {'aedat': out}
             # loop through the "events" stream
-            log.debug(f'loading events to memory')
+            if not ('events' in f.names):  # TODO add condiition for files with no DVS events
+                raise Exception(f'there are no events in this file; please request support for aedat4 files that lack events')
+            log.info(f'loading events to memory... please wait')
             # https://gitlab.com/inivation/dv/dv-python
             events = np.hstack([packet for packet in f['events'].numpy()])  # load events to np array
             out.data.dvs.timeStamp = events['timestamp']  # int64
@@ -235,9 +261,15 @@ def main(argv=None):
                     yield
 
             # loop through the "frames" stream
-            if not args.no_frame:
+            if not args.no_frame and 'frames' in f.names:
                 log.debug(f'loading frames to memory')
+                try:
+                    frames=f['frames']
+                except RuntimeError as e:
+                    log.error(f'file claims is has frames but there are not really any; cauught {e}')
+                    break
                 with tqdm(generator(), desc='frames', unit=' fr', maxinterval=1) as pbar:
+                    nframes=0
                     for frame in (f['frames']):
                         out.data.frame.samples.append(
                             np.array(frame.image, dtype=np.uint8))  # frame.image is ndarray(h,w,1) with 0-255 values ?? ADC has larger range, maybe clipped
@@ -249,16 +281,20 @@ def main(argv=None):
                         out.data.frame.expStart.append(frame.timestamp_start_of_exposure)
                         out.data.frame.expEnd.append(frame.timestamp_end_of_exposure)
                         pbar.update(1)
+                        nframes+=1
 
                 # Permute images via numpy
-                tmp = np.transpose(np.squeeze(np.array(out.data.frame.samples)), (1, 2, 0)) # make the frames x,y,frames
-                out.data.frame.numDiffImages = tmp.shape[2]
-                out.data.frame.size = out.data.frame.sizeAll[0]
-                out.data.frame.samples = tmp # leave frames as numpy array
-                log.info(f'{out.data.frame.numDiffImages} frames with size {out.data.frame.size}')
+                if nframes>0:
+                    tmp = np.transpose(np.squeeze(np.array(out.data.frame.samples)), (1, 2, 0)) # make the frames x,y,frames
+                    out.data.frame.numDiffImages = tmp.shape[2]
+                    out.data.frame.size = out.data.frame.sizeAll[0]
+                    out.data.frame.samples = tmp # leave frames as numpy array
+                    log.info(f'{out.data.frame.numDiffImages} frames with size {out.data.frame.size}')
+                else:
+                    args.no_frame=True
 
             # # loop through the "imu" stream
-            if not args.no_imu:
+            if not args.no_imu and 'imu' in f.names:
                 log.debug(f'loading IMU samples to memory')
 
                 with tqdm(generator(), desc='IMU', unit=' sample') as pbar:
@@ -316,7 +352,7 @@ def export_aedat_2(args, out, filename, height=260, gyro_scale=GYRO_FULL_SCALE_D
     else:
         with f:
             # Simple - events only - assume DAVIS
-            log.debug(f'saving {file_path.absolute()}')
+            log.info(f'saving {file_path.absolute()}')
 
             # CRLF \r\n is needed to not break header parsing in jAER
             f.write(b'#!AER-DAT2.0\r\n')
@@ -408,6 +444,7 @@ def export_aedat_2(args, out, filename, height=260, gyro_scale=GYRO_FULL_SCALE_D
                 encoded_data = ((quantized_data&0xffff) << imuSampleShift) | (code << imuTypeShift) | (imuSampleSubtype << apsSubTypeShift) | (apsImuType<<apsDvsImuTypeShift)
                 return encoded_data
 
+            ldvs = len(dvs_timestamps)
             if args.no_imu and args.no_frame: # TODO add frames condition
                 all_timestamps=dvs_timestamps
                 all_addr=dvs_addr
@@ -439,7 +476,6 @@ def export_aedat_2(args, out, filename, height=260, gyro_scale=GYRO_FULL_SCALE_D
                 # And we need to insert the frame double reset/read samples to the jAER stream
                 # That means a slow iteration over all timestamps to take things in order.
                 # At least each list of timestamps is in order already
-                ldvs = len(dvs_timestamps)
                 limu = len(imu_timestamps)
                 nfr=len(fr_timestamp)
                 hw=(out.data.frame.size) if nfr>0 else (0,0)  # reset and signal samples from DDS readout
