@@ -1,7 +1,7 @@
 # aedat4to2
 _aedat4to2_ converts AEDAT4 files from Inivation's [python DV](https://gitlab.com/inivation/dv/dv-python)  into AEDAT-2.0 files for jAER https://github.com/SensorsINI/jaer/. 
 
-Based on inivation AEDAT file format specifications [AEDAT_file_formats](https://inivation.github.io/inivation-docs/Software%20user%20guides/AEDAT_file_formats.html).
+Based on inivation AEDAT file format specifications  [AEDAT_file_formats](https://docs.inivation.com/software/software-advanced-usage/file-formats/index.html).
 
 Python is required (recommend Anaconda).
 
